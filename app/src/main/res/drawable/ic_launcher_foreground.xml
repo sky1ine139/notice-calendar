@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.55"
+        android:scaleY="0.55">
+        <!-- 日历主体 -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M32,30h44c4.4,0 8,3.6 8,8v40c0,4.4 -3.6,8 -8,8H32c-4.4,0 -8,-3.6 -8,-8V38C24,33.6 27.6,30 32,30z M38,22h8v12h-8z M62,22h8v12h-8z" />
+        <!-- 分隔线与日期格子（用底色镂空） -->
+        <path
+            android:fillColor="#3F51B5"
+            android:pathData="M24,46h60v5H24z M33,58h11v11H33z M49,58h11v11H49z M65,58h11v11H65z" />
+    </group>
+</vector>

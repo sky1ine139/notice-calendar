@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 深色模式配色（系统夜间状态自动生效） -->
+    <color name="bg_fill">#23242B</color>
+    <color name="bg_stroke">#3C3D45</color>
+    <color name="label_text">#A9AAB3</color>
+    <color name="muted_text">#91929A</color>
+    <color name="faint_text">#7E7F87</color>
+    <color name="body_text">#D6D7DC</color>
+    <color name="status_ok">#7BD389</color>
+    <color name="status_idle">#8E8F97</color>
+</resources>

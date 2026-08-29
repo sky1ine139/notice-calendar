@@ -1,0 +1,148 @@
+# 通知日程助手（NoticeCalendar）
+
+一个**个人自用**的安卓小工具：把微信群 / QQ群里的通知消息粘贴进来，自动用大模型提取**事件标题、时间、地点、备注**，人工确认后**一键写入系统日历并设置提醒**。所有解析过的通知自动存入历史记录，可回看、再编辑、重新写入日历。
+
+无广告、无登录注册、无多余功能。
+
+---
+
+## 一、功能与流程
+
+1. 复制群通知 → 打开APP → 点「从剪贴板粘贴」（或手动输入）
+2. 点「解析事件」→ 调用大模型 API 提取日程要素，自动过滤表情、问候、闲聊
+3. 跳到核对页：标题 / 时间（日历+时间选择器）/ 地点 / 备注 / 提前提醒时长，全部可手动修改
+4. 点「写入系统日历并提醒」→ 直接写入系统日历（CalendarProvider），按所选时长提前弹提醒
+5. 「历史」页保存全部记录：点击可再次编辑，可重复写入日历，可删除
+
+**时间识别说明**：解析时会把"手机当前日期、星期、时间"一并发给大模型，因此「明天、后天、下周三、本周五、9月10日、晚7点、7点半」等相对/口语时间都会换算成绝对公历日期和24小时制（如2026年8月29日收到"下周三晚7点"，会解析为 2026-09-02 19:00）。只提到时段没给钟点时（如"9月11日晚"），按 晚上→19:00、下午→14:00、中午→12:00、上午/早上→09:00 解析，不再误判为全天。通知里没有地点时，地点字段留空；完全没有任何时间信息时，才按"全天"事件写入。
+
+**本地兜底**：没填API Key或API调用失败时，自动改用内置的本地规则解析（粗略），结果会标注"本地解析"，仍可手动校正后写入日历。
+
+---
+
+## 二、编译环境
+
+| 项目 | 要求 |
+|---|---|
+| IDE | Android Studio（建议 Hedgehog 2023.1.1 或更新版本，新版均可） |
+| JDK | Android Studio 自带（JBR 17/21），无需单独安装 |
+| Gradle | 8.7（Wrapper 已配好，首次构建自动下载，国内走腾讯镜像） |
+| AGP / Kotlin | 8.5.2 / 1.9.24（项目内已锁定） |
+| Android SDK | compileSdk 34（Android Studio 会自动下载缺失组件） |
+| 运行设备 | Android 8.0（API 26）及以上 |
+
+项目已配置阿里云Maven镜像+腾讯Gradle镜像，国内网络可直接同步。
+
+> 建议：若你的用户名/路径含中文导致个别电脑构建报编码错误，把整个 `NoticeCalendar` 文件夹移到纯英文路径（如 `D:\projects\NoticeCalendar`）再打开。
+
+### 编译步骤
+
+1. 打开 Android Studio → `Open` → 选择本项目文件夹 `NoticeCalendar`（注意选包含 `settings.gradle` 的这一层）
+2. 等待右下角 Gradle Sync 完成（首次需联网下载依赖，几分钟）
+3. 编译运行二选一：
+   - **直接真机运行**：手机开USB调试连电脑，点工具栏 ▶ Run，自动安装打开
+   - **只打包APK**：菜单 `Build → Build App Bundle(s) / APK(s) → Build APK(s)`，完成后右下角通知里点 `locate`，APK 在
+     `app/build/outputs/apk/debug/app-debug.apk`
+
+命令行方式（可选）：装好 JDK 17 后，在项目目录执行 `gradlew.bat assembleDebug`（Windows）即可。
+
+---
+
+## 三、如何填入自己的 API 密钥
+
+**密钥不写进代码**。安装APP后，首页右上角点 **「设置」**，填三项：
+
+1. **接口地址 Base URL**（OpenAI 兼容接口，不带 `/chat/completions` 后缀）
+2. **API Key**（各服务商官网申请，仅保存在手机本机 SharedPreferences）
+3. **模型名称**
+
+填完点「保存」；建议先点「**测试连接**」验证可用。
+
+常用服务商对照表：
+
+| 服务商 | Base URL | 模型名示例 | 说明 |
+|---|---|---|---|
+| DeepSeek（推荐） | `https://api.deepseek.com/v1` | `deepseek-chat` | 便宜、中文效果好 |
+| 智谱 GLM | `https://open.bigmodel.cn/api/paas/v4` | `glm-4-flash` | 有免费模型，注册即用 |
+| Kimi（月之暗面） | `https://api.moonshot.cn/v1` | `moonshot-v1-8k` | |
+| 通义千问 | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-plus` / `qwen-turbo` | 用"兼容模式"地址 |
+| OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` | 需自备网络环境 |
+| 本地 Ollama | `http://127.0.0.1:11434/v1` | `qwen2.5:7b` 等 | 完全离线，见下方说明 |
+
+### 用本地 Ollama（可选，彻底本地运行）
+
+1. 电脑上安装并运行 Ollama，拉一个模型：`ollama pull qwen2.5:7b`
+2. 手机用USB线连电脑，执行：`adb reverse tcp:11434 tcp:11434`
+3. APP设置里填：Base URL `http://127.0.0.1:11434/v1`，Key 随便填一个字符（如 `x`），模型 `qwen2.5:7b`
+
+（也可让 Ollama 监听局域网 `OLLAMA_HOST=0.0.0.0`，Base URL 填电脑的局域网IP。）
+
+---
+
+## 四、打包 APK 并安装到手机
+
+### 生成 APK
+
+- 调试版（自用足够）：`Build → Build APK(s)` → `app/build/outputs/apk/debug/app-debug.apk`
+- 正式版（可选）：`Build → Generate Signed App Bundle / APK → APK` → 第一次点 `Create new...` 建一个 keystore（记住密码）→ 选 release → 得到 `app-release.apk`
+
+### 安装到手机
+
+任选其一：
+
+- **传文件安装**：把 APK 通过微信文件传输助手/QQ/数据线/网盘传到手机 → 文件管理器点击 APK → 允许"安装未知应用" → 安装
+- **adb 安装**：手机开USB调试后连电脑，执行 `adb install -r app-debug.apk`
+
+### 手机端准备
+
+- 写入日历时APP会弹窗申请**日历权限**，点允许即可；部分国产ROM（MIUI/澎湃、EMUI、ColorOS）还需到 `设置 → 应用管理 → 通知日程助手 → 权限管理` 里手动把"日历"设为允许
+- 如提示"未找到可用的系统日历账户"：打开系统自带的「日历」App，确认里面至少有一个日历账户（本地账户即可）
+
+---
+
+## 五、权限说明（仅申请必要权限）
+
+| 权限 | 用途 | 说明 |
+|---|---|---|
+| `READ_CALENDAR` / `WRITE_CALENDAR` | 写入事件、设置提醒、选择日历账户 | 首次写入时运行时申请 |
+| `INTERNET` | 调用你配置的大模型 API | API方式解析必需 |
+| 剪贴板 | 「从剪贴板粘贴」按钮读取 | Android 10+ 前台应用读取剪贴板**无需声明权限**，故清单中不申请 |
+
+通知原文只会发送到**你自己配置的**大模型接口；历史记录、密钥全部保存在手机本地，无任何账号体系。
+
+---
+
+## 六、项目结构
+
+```
+NoticeCalendar/
+├── app/src/main/
+│   ├── AndroidManifest.xml
+│   ├── java/com/noticecalendar/app/
+│   │   ├── MainActivity.kt          # 首页：粘贴 → 解析
+│   │   ├── EditorActivity.kt        # 核对/编辑 → 写入日历（含运行时权限）
+│   │   ├── HistoryActivity.kt       # 历史记录列表
+│   │   ├── SettingsActivity.kt      # API 配置 + 测试连接
+│   │   ├── data/EventRecord.kt      # 记录模型
+│   │   ├── data/EventRepository.kt  # 本地JSON文件存储
+│   │   ├── data/SettingsStore.kt    # API密钥本地存储
+│   │   ├── llm/LlmClient.kt         # OpenAI兼容接口客户端 + 提取提示词
+│   │   ├── parse/LocalFallbackParser.kt  # 无API时的本地规则兜底解析
+│   │   ├── calendar/CalendarHelper.kt    # CalendarProvider 写入事件+提醒
+│   │   └── util/TimeUtil.kt
+│   └── res/…                        # 布局、图标、主题
+├── build.gradle / settings.gradle   # 已配置国内镜像
+└── gradle/wrapper/                  # Gradle 8.7 Wrapper
+```
+
+---
+
+## 七、常见问题
+
+- **日历详情里"类型"显示成邮箱账户**：那表示日程写进了该邮箱的同步日历。APP 默认**优先写入手机本地日历**；如需更换，到「设置 → 写入的日历账户」里选择（首次会申请日历权限）。
+- **全天日程的"提前30分钟"提醒显示为前一天 23:30**：系统对全天事件按当天 0:00 倒推提醒时间，属正常现象；全天日程建议把提醒改为"提前1天"。
+- **AI解析失败**：先用设置页「测试连接」排查：地址是否带了 `/v1`、Key 是否有效、账户是否有余额、模型名是否写对；访问 OpenAI 等海外接口需自备网络。
+- **模型返回"不是JSON"**：个别模型不守规矩，换 `deepseek-chat` / `glm-4-flash` 等指令跟随好的模型即可（APP已做容错截取，偶发可重试）。
+- **相对时间算错**：换算基准是**手机的当前日期时间**，确认手机时间准确即可。
+- **写入日历失败**：见"手机端准备"第2、3条（权限、日历账户）。
+- **卸载后记录还在吗**：不在。所有数据在应用私有目录，卸载即清除。
