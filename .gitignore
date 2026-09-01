@@ -7,3 +7,8 @@ build/
 /captures
 .externalNativeBuild
 .cxx
+
+# 本地文件（不入公开仓库）
+/release/
+/AI交接文档.md
+/重新打包APK.bat
