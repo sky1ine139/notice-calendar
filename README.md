@@ -4,7 +4,13 @@
 
 无广告、无登录注册、无多余功能。
 
-**最新版本 v1.2** — [点击下载 APK](https://github.com/sky1ine139/notice-calendar/releases)
+**最新版本 v1.3** — [点击下载 APK](https://github.com/sky1ine139/notice-calendar/releases)
+
+### v1.3 新功能
+
+- 🔄 **自动更新检查**：App启动时静默检查GitHub最新Release，有新版本自动弹出提示，显示更新日志和下载按钮
+- 📲 **手动检查更新**：设置页新增「检查更新 / 获取最新版本」按钮，手动触发检查
+- ℹ️ **设置页关于区域**：新增版本号、开源协议信息，方便用户查看当前版本
 
 ### v1.2 新功能
 
@@ -142,9 +148,10 @@ NoticeCalendar/
 │   │   ├── MainActivity.kt          # 首页：粘贴 → 解析 + 底部打赏卡片
 │   │   ├── EditorActivity.kt        # 核对/编辑 → 写入日历（含更新模式banner）
 │   │   ├── HistoryActivity.kt       # 历史记录列表
-│   │   ├── SettingsActivity.kt      # API 配置 + 主题皮肤切换 + 测试连接
+│   │   ├── SettingsActivity.kt      # API 配置 + 主题皮肤切换 + 检查更新 + 测试连接
 │   │   ├── DonateActivity.kt        # 打赏页（WebView加载本地HTML）
 │   │   ├── theme/ThemeManager.kt    # 主题管理器（5套预设主题）
+│   │   ├── update/UpdateChecker.kt  # 自动更新检查（GitHub Release API）
 │   │   ├── data/EventRecord.kt      # 记录模型
 │   │   ├── data/EventRepository.kt  # 本地JSON文件存储
 │   │   ├── data/SettingsStore.kt    # API密钥本地存储
@@ -172,6 +179,13 @@ NoticeCalendar/
 ---
 
 ## 八、更新日志
+
+### v1.3（2026-09-01）
+
+- **自动更新检查**：App启动时静默检查GitHub最新Release，有新版本自动弹出提示，显示当前版本、最新版本和更新日志
+- **手动检查更新**：设置页新增「检查更新 / 获取最新版本」按钮，手动触发检查，无更新时提示"已是最新版本"
+- **设置页关于区域**：新增版本号、开源协议信息
+- **优化**：网络异常时自动检查静默失败，不打扰用户；手动检查失败时提示可手动访问GitHub查看
 
 ### v1.2（2026-09-01）
 
