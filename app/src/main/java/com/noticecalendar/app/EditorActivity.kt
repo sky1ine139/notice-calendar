@@ -31,6 +31,7 @@ class EditorActivity : AppCompatActivity() {
         const val EXTRA_RECORD_ID = "record_id"
         const val EXTRA_UPDATE_MODE = "update_mode"
         const val EXTRA_OLD_START_MILLIS = "old_start_millis"
+        const val EXTRA_OLD_TITLE = "old_title"
         private const val REQ_CALENDAR = 101
         private const val HOUR_MS = TimeUtil.HOUR_MS
         private const val DAY_MS = TimeUtil.DAY_MS
@@ -47,6 +48,7 @@ class EditorActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.noticecalendar.app.theme.ThemeManager.apply(this)
         binding = ActivityEditorBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -62,10 +64,12 @@ class EditorActivity : AppCompatActivity() {
 
         // 更新模式：展示原时间→新时间差异
         if (updateMode && oldStartMillis > 0) {
+            val oldTitle = intent.getStringExtra(EXTRA_OLD_TITLE).orEmpty()
             binding.llUpdateBanner.visibility = View.VISIBLE
             val oldText = TimeUtil.formatMillis(oldStartMillis, record.allDay)
             val newText = TimeUtil.formatMillis(record.startMillis, record.allDay)
-            binding.tvUpdateDiff.text = "原时间：$oldText\n新时间：$newText\n确认后将删除旧日程并写入新日程"
+            val titleLine = if (oldTitle.isNotBlank()) "匹配日程：$oldTitle\n" else ""
+            binding.tvUpdateDiff.text = "${titleLine}原时间：$oldText\n新时间：$newText\n确认后将删除旧日程并写入新日程"
             binding.btnWriteCalendar.text = "更新系统日历"
         }
 

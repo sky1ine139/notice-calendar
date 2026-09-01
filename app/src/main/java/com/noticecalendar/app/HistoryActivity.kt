@@ -26,6 +26,7 @@ class HistoryActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.noticecalendar.app.theme.ThemeManager.apply(this)
         binding = ActivityHistoryBinding.inflate(layoutInflater)
         setContentView(binding.root)
 

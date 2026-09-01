@@ -1,4 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.NoticeCal" parent="Theme.Material3.DayNight.NoActionBar" />
+    <!-- 默认主题：紫色 -->
+    <style name="Theme.NoticeCal" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/theme_purple_primary</item>
+        <item name="colorPrimaryDark">@color/theme_purple_dark</item>
+        <item name="colorAccent">@color/theme_purple_primary</item>
+        <item name="android:statusBarColor">@color/theme_purple_dark</item>
+    </style>
+
+    <!-- 蓝色主题 -->
+    <style name="Theme.NoticeCal.Blue" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/theme_blue_primary</item>
+        <item name="colorPrimaryDark">@color/theme_blue_dark</item>
+        <item name="colorAccent">@color/theme_blue_primary</item>
+        <item name="android:statusBarColor">@color/theme_blue_dark</item>
+        <item name="android:windowBackground">@color/bg_fill</item>
+    </style>
+
+    <!-- 绿色主题 -->
+    <style name="Theme.NoticeCal.Green" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/theme_green_primary</item>
+        <item name="colorPrimaryDark">@color/theme_green_dark</item>
+        <item name="colorAccent">@color/theme_green_primary</item>
+        <item name="android:statusBarColor">@color/theme_green_dark</item>
+        <item name="android:windowBackground">@color/bg_fill</item>
+    </style>
+
+    <!-- 橙色主题 -->
+    <style name="Theme.NoticeCal.Orange" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/theme_orange_primary</item>
+        <item name="colorPrimaryDark">@color/theme_orange_dark</item>
+        <item name="colorAccent">@color/theme_orange_primary</item>
+        <item name="android:statusBarColor">@color/theme_orange_dark</item>
+        <item name="android:windowBackground">@color/bg_fill</item>
+    </style>
+
+    <!-- 深色主题 -->
+    <style name="Theme.NoticeCal.Dark" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/theme_purple_primary</item>
+        <item name="colorPrimaryDark">@color/theme_purple_dark</item>
+        <item name="colorAccent">@color/theme_purple_primary</item>
+        <item name="android:statusBarColor">@color/theme_dark_bg</item>
+        <item name="android:windowBackground">@color/theme_dark_bg</item>
+    </style>
 </resources>

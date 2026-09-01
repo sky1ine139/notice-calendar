@@ -27,6 +27,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.noticecalendar.app.theme.ThemeManager.apply(this)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -38,6 +39,9 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnPaste.setOnClickListener { pasteFromClipboard() }
         binding.btnParse.setOnClickListener { startParse() }
+        binding.cardDonate.setOnClickListener {
+            startActivity(Intent(this, DonateActivity::class.java))
+        }
     }
 
     /** Android 10+ 前台应用读取剪贴板无需任何权限声明 */
@@ -79,29 +83,35 @@ class MainActivity : AppCompatActivity() {
             val (parsed, source) = result
             val isUpdate = parsed.type == "update" && !parsed.matchKeyword.isNullOrBlank()
             val matchedOld = if (isUpdate) findMatchingRecord(parsed.matchKeyword!!) else null
+            val newRec = buildRecord(parsed, raw, source)
 
             val record: EventRecord
             val updateMode: Boolean
             val oldStartMillis: Long
-            if (matchedOld != null) {
-                // 更新模式：复用原记录的 id 和 calendarEventId，只更新字段
-                val newRec = buildRecord(parsed, raw, source)
+            val oldTitle: String
+            // 验证：匹配到的旧记录时间必须和新时间不同，否则说明匹配错了（可能匹配到上一次错误创建的记录）
+            val timeChanged = matchedOld != null && matchedOld.startMillis != newRec.startMillis
+            if (timeChanged && matchedOld != null) {
+                // 更新模式：复用原记录的 id 和 calendarEventId，只更新时间等字段
+                // 标题保留原日程标题（变更通知通常不会重复完整事件名，LLM易解析错）
                 record = matchedOld.copy(
-                    title = newRec.title,
+                    title = matchedOld.title,
                     startMillis = newRec.startMillis,
                     endMillis = newRec.endMillis,
                     allDay = newRec.allDay,
-                    location = newRec.location,
-                    description = newRec.description,
+                    location = if (newRec.location.isNotBlank()) newRec.location else matchedOld.location,
+                    description = newRec.description.ifBlank { matchedOld.description },
                     rawText = raw,
                     source = source
                 )
                 oldStartMillis = matchedOld.startMillis
+                oldTitle = matchedOld.title
                 EventRepository.update(this, record)
                 updateMode = true
             } else {
-                record = buildRecord(parsed, raw, source)
+                record = newRec
                 oldStartMillis = 0L
+                oldTitle = ""
                 EventRepository.add(this, record)
                 updateMode = false
             }
@@ -117,6 +127,7 @@ class MainActivity : AppCompatActivity() {
                         .putExtra(EditorActivity.EXTRA_RECORD_ID, record.id)
                         .putExtra(EditorActivity.EXTRA_UPDATE_MODE, updateMode)
                         .putExtra(EditorActivity.EXTRA_OLD_START_MILLIS, oldStartMillis)
+                        .putExtra(EditorActivity.EXTRA_OLD_TITLE, oldTitle)
                 )
                 binding.input.setText("")
             }

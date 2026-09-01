@@ -10,4 +10,20 @@
     <color name="body_text">#444444</color>
     <color name="status_ok">#2E7D32</color>
     <color name="status_idle">#9E9E9E</color>
+
+    <!-- 主题色：紫色（默认） -->
+    <color name="theme_purple_primary">#6750A4</color>
+    <color name="theme_purple_dark">#4F378B</color>
+    <!-- 主题色：蓝色 -->
+    <color name="theme_blue_primary">#1976D2</color>
+    <color name="theme_blue_dark">#1565C0</color>
+    <!-- 主题色：绿色 -->
+    <color name="theme_green_primary">#2E7D32</color>
+    <color name="theme_green_dark">#1B5E20</color>
+    <!-- 主题色：橙色 -->
+    <color name="theme_orange_primary">#F57C00</color>
+    <color name="theme_orange_dark">#E65100</color>
+    <!-- 深色主题背景 -->
+    <color name="theme_dark_bg">#121212</color>
+    <color name="theme_dark_surface">#1E1E1E</color>
 </resources>

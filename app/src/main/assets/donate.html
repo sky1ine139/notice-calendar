@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>支持一下</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 36px 24px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    text-align: center;
+  }
+  .emoji { font-size: 44px; margin-bottom: 14px; }
+  h1 {
+    font-size: 22px;
+    color: #333;
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+  .qrcodes {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+  .qr-item {
+    flex: 1;
+    max-width: 160px;
+  }
+  .qr-label {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .qr-label.wechat { background: #07c160; color: #fff; }
+  .qr-label.alipay { background: #1677ff; color: #fff; }
+  .qr-img {
+    width: 100%;
+    border-radius: 12px;
+    border: 2px solid #f0f0f0;
+    display: block;
+  }
+  .tip {
+    font-size: 12px;
+    color: #aaa;
+    margin-bottom: 20px;
+  }
+  .thanks {
+    font-size: 14px;
+    color: #666;
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f0;
+  }
+  .thanks span { color: #e74c3c; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="emoji">☕</div>
+    <h1>觉得好用，请作者喝瓶水</h1>
+    <p class="subtitle">
+      通知日程助手 完全免费，无广告，不收集隐私<br>
+      打赏纯属自愿，不给也能用全部功能
+    </p>
+    <div class="qrcodes">
+      <div class="qr-item">
+        <div class="qr-label wechat">微信</div>
+        <img class="qr-img" src="wechat.png" alt="微信收款码">
+      </div>
+      <div class="qr-item">
+        <div class="qr-label alipay">支付宝</div>
+        <img class="qr-img" src="alipay.png" alt="支付宝收款码">
+      </div>
+    </div>
+    <p class="tip">长按识别二维码 / 截图扫码</p>
+    <div class="thanks">
+      感谢你的支持 <span>❤</span>
+    </div>
+  </div>
+</body>
+</html>

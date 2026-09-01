@@ -27,6 +27,7 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.noticecalendar.app.theme.ThemeManager.apply(this)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -69,6 +70,31 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         binding.tvCalendarAccount.setOnClickListener { onPickCalendarClicked() }
+
+        // 主题选择
+        val currentTheme = com.noticecalendar.app.theme.ThemeManager.getCurrent(this)
+        binding.tvTheme.text = currentTheme.label
+        binding.tvTheme.setOnClickListener { showThemePicker() }
+    }
+
+    private fun showThemePicker() {
+        val themes = com.noticecalendar.app.theme.ThemeManager.allThemes()
+        val names = themes.map { it.label }.toTypedArray()
+        val current = com.noticecalendar.app.theme.ThemeManager.getCurrent(this)
+        val checked = themes.indexOfFirst { it.id == current.id }
+
+        AlertDialog.Builder(this)
+            .setTitle("选择主题皮肤")
+            .setSingleChoiceItems(names, checked) { dialog, which ->
+                val selected = themes[which]
+                com.noticecalendar.app.theme.ThemeManager.setCurrent(this, selected)
+                binding.tvTheme.text = selected.label
+                dialog.dismiss()
+                // 重建Activity使主题生效
+                recreate()
+            }
+            .setNegativeButton("取消", null)
+            .show()
     }
 
     override fun onResume() {

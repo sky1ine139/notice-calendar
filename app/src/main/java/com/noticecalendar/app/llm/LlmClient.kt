@@ -45,7 +45,7 @@ object LlmClient {
 4. 通知里完全没有日期信息时date填null。
 5. location未提到任何地点时填空字符串。
 6. title要简明达意，如"班会""实验室例会""高数期中考试"；description保留"带报告""带上笔记本"等关键要求。
-7. 【重要】判断通知类型：如果这条通知是对之前已发过的某个日程的变更（如"延期到""改期到""时间调整为""推迟到""顺延至""更改地点为"等），则type填"update"，match_keyword填被修改的事件名称（如"互评大会""班会"，通常是通知标题中的核心词，10字以内），date/time/location填变更后的新值；如果是一条全新的通知，type填"new"，match_keyword填空字符串。"""
+7. 【重要】判断通知类型：如果这条通知是对之前已发过的某个日程的变更（如"延期到""改期到""时间调整为""推迟到""顺延至""更改地点为"等），则type填"update"，match_keyword填被修改事件的核心名称（如"互评大会""班会""期中考试"，要具体到事件名，不要用"发展对象""会议""活动"等泛化词，10字以内），date/time/location填变更后的新值；title填被修改的事件名称（如"发展对象互评大会"），不要填变更原因。如果是一条全新的通知，type填"new"，match_keyword填空字符串。"""
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
