@@ -11,8 +11,8 @@ android {
         applicationId "com.noticecalendar.app"
         minSdk 26          // Android 8.0 及以上可安装
         targetSdk 34
-        versionCode 2
-        versionName "1.1"
+        versionCode 3
+        versionName "1.2"
     }
 
     buildTypes {

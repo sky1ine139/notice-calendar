@@ -25,6 +25,33 @@
             android:textColor="@color/muted_text"
             android:textSize="12sp" />
 
+        <LinearLayout
+            android:id="@+id/ll_update_banner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_input"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="检测到日程变更"
+                android:textColor="#FF6F00"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_update_diff"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/body_text"
+                android:textSize="13sp" />
+        </LinearLayout>
+
         <EditText
             android:id="@+id/et_title"
             android:layout_width="match_parent"

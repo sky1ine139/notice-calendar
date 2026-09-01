@@ -123,4 +123,15 @@ object CalendarHelper {
         }
         return eventId
     }
+
+    /** 删除系统日历中的事件（更新日程时先删旧的再建新的） */
+    fun deleteEvent(context: Context, eventId: Long): Boolean {
+        if (eventId <= 0) return false
+        return try {
+            val uri = ContentUris.withAppendedId(Events.CONTENT_URI, eventId)
+            context.contentResolver.delete(uri, null, null) > 0
+        } catch (e: Exception) {
+            false
+        }
+    }
 }

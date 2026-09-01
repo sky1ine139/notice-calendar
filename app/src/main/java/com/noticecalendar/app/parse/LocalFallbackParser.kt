@@ -12,10 +12,12 @@ object LocalFallbackParser {
 
     private val EMOJI = Regex("[\\uD83C-\\uDBFF\\uDC00-\\uDFFF\\uFE0F\\u200D\\u2600-\\u27BF#*\\u20E3]+")
     private val TIME_RE = Regex("(凌晨|早上|上午|中午|下午|晚上|晚)?\\s*(\\d{1,2})[点时:：]\\s*(半|(\\d{1,2})分?)?")
+    private val UPDATE_WORDS = Regex("延期|改期|更改|调整|推迟|顺延|变更|改到|改为|改在|时间改|地点改")
 
     fun parse(raw: String): ParsedEvent {
         val text = raw.replace("\n", " ")
         val today = LocalDate.now()
+        val isUpdate = UPDATE_WORDS.containsMatchIn(raw)
 
         // 先找时间，再从剩余文本中找日期，避免 "2026.9.3" 之类被误当时间
         var time: LocalTime? = null
@@ -48,15 +50,29 @@ object LocalFallbackParser {
             time = vaguePeriodTime(text)
         }
 
+        val title = firstTitle(raw)
         return ParsedEvent(
-            title = firstTitle(raw),
+            title = title,
             date = date?.toString(),
             time = time?.toString(),
             endTime = null,
             allDay = time == null,
             location = findLocation(text),
-            description = ""
+            description = "",
+            type = if (isUpdate && date != null) "update" else "new",
+            matchKeyword = if (isUpdate) extractKeyword(title) else null
         )
+    }
+
+    /** 从标题中提取匹配关键词：去掉"通知""通知】"等后缀，取核心事件名 */
+    private fun extractKeyword(title: String?): String? {
+        if (title.isNullOrBlank()) return null
+        var k = title
+            .removePrefix("【").removeSuffix("】")
+            .removeSuffix("通知").removeSuffix("通知】")
+            .removeSuffix("的通知").trim()
+        if (k.length > 12) k = k.take(12)
+        return k.ifBlank { null }
     }
 
     private fun findDate(text: String, today: LocalDate): LocalDate? {

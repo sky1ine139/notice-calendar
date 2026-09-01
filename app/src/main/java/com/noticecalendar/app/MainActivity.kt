@@ -77,8 +77,34 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             val (parsed, source) = result
-            val record = buildRecord(parsed, raw, source)
-            EventRepository.add(this, record)
+            val isUpdate = parsed.type == "update" && !parsed.matchKeyword.isNullOrBlank()
+            val matchedOld = if (isUpdate) findMatchingRecord(parsed.matchKeyword!!) else null
+
+            val record: EventRecord
+            val updateMode: Boolean
+            val oldStartMillis: Long
+            if (matchedOld != null) {
+                // 更新模式：复用原记录的 id 和 calendarEventId，只更新字段
+                val newRec = buildRecord(parsed, raw, source)
+                record = matchedOld.copy(
+                    title = newRec.title,
+                    startMillis = newRec.startMillis,
+                    endMillis = newRec.endMillis,
+                    allDay = newRec.allDay,
+                    location = newRec.location,
+                    description = newRec.description,
+                    rawText = raw,
+                    source = source
+                )
+                oldStartMillis = matchedOld.startMillis
+                EventRepository.update(this, record)
+                updateMode = true
+            } else {
+                record = buildRecord(parsed, raw, source)
+                oldStartMillis = 0L
+                EventRepository.add(this, record)
+                updateMode = false
+            }
 
             runOnUiThread {
                 setLoading(false)
@@ -89,6 +115,8 @@ class MainActivity : AppCompatActivity() {
                 startActivity(
                     Intent(this, EditorActivity::class.java)
                         .putExtra(EditorActivity.EXTRA_RECORD_ID, record.id)
+                        .putExtra(EditorActivity.EXTRA_UPDATE_MODE, updateMode)
+                        .putExtra(EditorActivity.EXTRA_OLD_START_MILLIS, oldStartMillis)
                 )
                 binding.input.setText("")
             }
@@ -132,6 +160,17 @@ class MainActivity : AppCompatActivity() {
             createdAt = now,
             source = source
         )
+    }
+
+    /** 在历史记录中查找标题包含关键词的最近一条日程（用于更新匹配） */
+    private fun findMatchingRecord(keyword: String): EventRecord? {
+        val kw = keyword.trim()
+        if (kw.length < 2) return null
+        val all = EventRepository.getAll(this)
+        // 标题包含关键词，按开始时间倒序取最近的
+        return all
+            .filter { it.title.contains(kw, ignoreCase = true) }
+            .maxByOrNull { it.startMillis }
     }
 
     private fun setLoading(loading: Boolean) {

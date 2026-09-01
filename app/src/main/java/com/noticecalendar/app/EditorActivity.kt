@@ -5,6 +5,7 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -28,6 +29,8 @@ class EditorActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_RECORD_ID = "record_id"
+        const val EXTRA_UPDATE_MODE = "update_mode"
+        const val EXTRA_OLD_START_MILLIS = "old_start_millis"
         private const val REQ_CALENDAR = 101
         private const val HOUR_MS = TimeUtil.HOUR_MS
         private const val DAY_MS = TimeUtil.DAY_MS
@@ -39,6 +42,8 @@ class EditorActivity : AppCompatActivity() {
     private lateinit var binding: ActivityEditorBinding
     private lateinit var record: EventRecord
     private var pendingWrite = false
+    private var updateMode = false
+    private var oldStartMillis = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +57,17 @@ class EditorActivity : AppCompatActivity() {
             return
         }
         record = rec
+        updateMode = intent.getBooleanExtra(EXTRA_UPDATE_MODE, false)
+        oldStartMillis = intent.getLongExtra(EXTRA_OLD_START_MILLIS, 0L)
+
+        // 更新模式：展示原时间→新时间差异
+        if (updateMode && oldStartMillis > 0) {
+            binding.llUpdateBanner.visibility = View.VISIBLE
+            val oldText = TimeUtil.formatMillis(oldStartMillis, record.allDay)
+            val newText = TimeUtil.formatMillis(record.startMillis, record.allDay)
+            binding.tvUpdateDiff.text = "原时间：$oldText\n新时间：$newText\n确认后将删除旧日程并写入新日程"
+            binding.btnWriteCalendar.text = "更新系统日历"
+        }
 
         binding.spinnerReminder.adapter = ArrayAdapter(
             this, android.R.layout.simple_spinner_dropdown_item, REMINDER_LABELS
@@ -191,16 +207,27 @@ class EditorActivity : AppCompatActivity() {
     private fun doWrite() {
         binding.btnWriteCalendar.isEnabled = false
         val app = this
+        val oldEventId = record.calendarEventId
         Thread {
             try {
+                // 先删除旧的日历事件（更新日程或再次写入时避免重复）
+                if (oldEventId > 0) {
+                    CalendarHelper.deleteEvent(app, oldEventId)
+                }
                 val eventId = CalendarHelper.insertEvent(
                     app, record, SettingsStore.load(app).preferredCalendarId
                 )
                 record.calendarEventId = eventId
                 EventRepository.update(app, record)
                 runOnUiThread {
+                    val msg = if (oldEventId > 0) "已更新系统日历（旧日程已替换）" else "已写入系统日历，并设置提醒"
                     binding.tvStatus.text = "已写入系统日历（事件ID $eventId），可再次写入"
-                    Toast.makeText(app, "已写入系统日历，并设置提醒", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(app, msg, Toast.LENGTH_SHORT).show()
+                    if (updateMode) {
+                        updateMode = false
+                        binding.llUpdateBanner.visibility = View.GONE
+                        binding.btnWriteCalendar.text = "写入系统日历并提醒"
+                    }
                 }
             } catch (e: Exception) {
                 runOnUiThread {
