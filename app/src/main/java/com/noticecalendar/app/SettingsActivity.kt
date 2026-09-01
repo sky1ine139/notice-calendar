@@ -75,6 +75,11 @@ class SettingsActivity : AppCompatActivity() {
         val currentTheme = com.noticecalendar.app.theme.ThemeManager.getCurrent(this)
         binding.tvTheme.text = currentTheme.label
         binding.tvTheme.setOnClickListener { showThemePicker() }
+
+        // 检查更新
+        binding.tvGithub.setOnClickListener {
+            com.noticecalendar.app.update.UpdateChecker.check(this, silent = false)
+        }
     }
 
     private fun showThemePicker() {

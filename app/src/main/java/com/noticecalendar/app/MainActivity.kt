@@ -42,6 +42,9 @@ class MainActivity : AppCompatActivity() {
         binding.cardDonate.setOnClickListener {
             startActivity(Intent(this, DonateActivity::class.java))
         }
+
+        // 启动时静默检查更新（有新版本才弹提示，无更新/网络错误不打扰）
+        com.noticecalendar.app.update.UpdateChecker.check(this, silent = true)
     }
 
     /** Android 10+ 前台应用读取剪贴板无需任何权限声明 */
