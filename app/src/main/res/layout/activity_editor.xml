@@ -61,6 +61,8 @@
             android:hint="事件标题"
             android:inputType="text"
             android:padding="12dp"
+            android:textColor="@color/body_text"
+            android:textColorHint="@color/muted_text"
             android:textSize="15sp" />
 
         <TextView
@@ -87,6 +89,7 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:padding="12dp"
+                android:textColor="@color/body_text"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
@@ -115,6 +118,8 @@
             android:hint="如：二教302"
             android:inputType="text"
             android:padding="12dp"
+            android:textColor="@color/body_text"
+            android:textColorHint="@color/muted_text"
             android:textSize="15sp" />
 
         <TextView
@@ -152,6 +157,8 @@
             android:inputType="textMultiLine"
             android:minLines="2"
             android:padding="12dp"
+            android:textColor="@color/body_text"
+            android:textColorHint="@color/muted_text"
             android:textSize="15sp" />
 
         <Button

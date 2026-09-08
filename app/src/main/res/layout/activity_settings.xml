@@ -43,6 +43,8 @@
             android:hint="https://api.deepseek.com/v1"
             android:inputType="textUri"
             android:padding="12dp"
+            android:textColor="@color/body_text"
+            android:textColorHint="@color/muted_text"
             android:textSize="14sp" />
 
         <TextView
@@ -62,6 +64,8 @@
             android:hint="sk-..."
             android:inputType="textPassword"
             android:padding="12dp"
+            android:textColor="@color/body_text"
+            android:textColorHint="@color/muted_text"
             android:textSize="14sp" />
 
         <TextView
@@ -81,6 +85,8 @@
             android:hint="deepseek-chat"
             android:inputType="text"
             android:padding="12dp"
+            android:textColor="@color/body_text"
+            android:textColorHint="@color/muted_text"
             android:textSize="14sp" />
 
         <TextView
@@ -101,6 +107,7 @@
             android:focusable="true"
             android:padding="12dp"
             android:text="自动（本地日历优先）"
+            android:textColor="@color/body_text"
             android:textSize="14sp" />
 
         <Button
@@ -147,6 +154,7 @@
             android:focusable="true"
             android:padding="12dp"
             android:text="紫色（默认）"
+            android:textColor="@color/body_text"
             android:textSize="14sp" />
 
         <Space
@@ -156,7 +164,7 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="#EEEEEE" />
+            android:background="@color/bg_stroke" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -172,7 +180,7 @@
             android:layout_marginTop="8dp"
             android:gravity="center"
             android:text="通知日程助手 v1.2"
-            android:textColor="#333333"
+            android:textColor="@color/body_text"
             android:textSize="15sp"
             android:textStyle="bold" />
 
@@ -196,7 +204,7 @@
             android:layout_marginTop="8dp"
             android:gravity="center"
             android:text="开源协议：MIT License"
-            android:textColor="#999999"
+            android:textColor="@color/faint_text"
             android:textSize="12sp" />
 
         <Space

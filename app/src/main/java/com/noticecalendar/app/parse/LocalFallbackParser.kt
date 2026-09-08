@@ -18,6 +18,10 @@ object LocalFallbackParser {
     private val UPDATE_WORDS = Regex("延期|改期|更改|调整|推迟|顺延|变更|改到|改为|改在|时间改|地点改")
     // "延期到/改期到"等后面跟新时间的模式
     private val UPDATE_TO = Regex("(?:延期到|改期到|调整为|推迟到|顺延至|改到|改为|改在)")
+    // 常见事件名后缀：优先从通知中提取核心事件名（如"志愿者面试""互评大会"）
+    private val EVENT_SUFFIX = "面试|笔试|考试|测验|会议|例会|班会|讲座|培训|大会|答辩|活动|仪式|演练|彩排|值班|签到|比赛|竞赛|测试|座谈|汇报|研讨|团课|党课|宣讲|招新|纳新|换届|动员会|总结会|分享会|宣讲会|报告会|座谈会|招聘"
+    // 带前缀的房间号/字母数字地点："面试地点在10110""候场地点在10113B""考试地点：A101"
+    private val ROOM_RE = Regex("(面试地点|候场地点|考试地点|集合地点|活动地点|比赛地点|报到地点|演出地点|参赛地点|笔试地点|答辩地点|开会地点|会议地点|上课地点|培训地点|值班地点|地点)(?:为|是|在|：|:)?\\s*([A-Za-z0-9][A-Za-z0-9\\-]{1,19})")
     // 从"本次XX延期""该XX改期"中提取事件名
     private val EVENT_NAME_PATTERNS = listOf(
         Regex("本次(.+?)(?:延期|改期|更改|调整|推迟|顺延|取消|变更)"),
@@ -82,7 +86,11 @@ object LocalFallbackParser {
         }
 
         // 更新类型：标题用提取到的事件名，而不是原文第一行（变更通知第一行通常是原因）
-        val title = if (isUpdate && !eventName.isNullOrBlank()) eventName else firstTitle(raw)
+        // 非更新类型：优先提取核心事件名（"志愿者面试"），找不到再退回原文第一行
+        val title = when {
+            isUpdate && !eventName.isNullOrBlank() -> eventName
+            else -> extractEventTitle(raw) ?: firstTitle(raw)
+        }
         return ParsedEvent(
             title = title,
             date = date?.toString(),
@@ -165,6 +173,19 @@ object LocalFallbackParser {
             return tens * 10 + unit
         }
         return null
+    }
+
+    /** 从通知中提取核心事件名（如"志愿者面试""党员大会"），找不到则返回null */
+    private fun extractEventTitle(raw: String): String? {
+        val text = raw.replace("\n", " ")
+        // 事件名通常跟在"举行/参加/召开"等引导词或标点/句子开头之后，
+        // 这样避免把"一食堂三楼举行党员大会"这类地点+动词结构误当成标题
+        val m = Regex("(?:^|[，。！？；、\\s]|举行|开展|进行|参加|召开|举办|开始|组织)([\\u4e00-\\u9fa5]{2,8}?(?:$EVENT_SUFFIX))").find(text)
+            ?: return null
+        var name = m.groupValues[1].trim()
+        // 去掉冗余引导词（"参加""举行"等），只保留事件名核心
+        name = name.replace(Regex("^(?:参加|举行|开展|进行|举办|召开|安排|组织|负责|记得|别忘了)"), "").trim()
+        return if (name.length >= 2) name.take(20) else null
     }
 
     /** 从变更通知中提取被修改的事件名（如"本次互评大会延期"→"互评大会"） */
@@ -271,7 +292,7 @@ object LocalFallbackParser {
         // 清理标题：去掉日期、时间、连接词，只保留核心事件（日历上已显示时间，标题无需重复）
         val cleaned = cleanTitle(t)
         val result = if (cleaned.length >= 2) cleaned else t
-        return if (result.length > 20) result.take(20) else result.ifBlank { null }
+        return if (result.length > 30) result.take(30) else result.ifBlank { null }
     }
 
     /** 从标题中去掉日期、时间、连接词，只保留核心事件名 */
@@ -302,6 +323,16 @@ object LocalFallbackParser {
     }
 
     private fun findLocation(text: String): String {
+        // 优先：带前缀的房间号/字母数字地点（"面试地点在10110，候场地点在10113B"→"10110；候场10113B"）
+        val rooms = ROOM_RE.findAll(text).toList()
+        if (rooms.isNotEmpty()) {
+            val parts = rooms.mapIndexed { i, m ->
+                val prefix = m.groupValues[1].removeSuffix("地点")
+                val room = m.groupValues[2]
+                if (i == 0) room else if (prefix.isBlank()) room else "$prefix$room"
+            }
+            return parts.distinct().joinToString("；").take(50)
+        }
         // 显式"地点：XXX"格式优先
         val m1 = Regex("地点[:：]\\s*([^\\s，,。；;]+)").find(text)
         if (m1 != null) return m1.groupValues[1]

@@ -84,6 +84,8 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             val (parsed, source) = result
+            // 通知里既没有日期也没有具体钟点时，不冒充"今天全天"，进入编辑页时明确提示用户补时间
+            val timeUnspecified = parsed.date.isNullOrBlank() && parsed.time.isNullOrBlank()
             val isUpdate = parsed.type == "update" && !parsed.matchKeyword.isNullOrBlank()
             val matchedOld = if (isUpdate) findMatchingRecord(parsed.matchKeyword!!) else null
             val newRec = buildRecord(parsed, raw, source)
@@ -131,6 +133,7 @@ class MainActivity : AppCompatActivity() {
                         .putExtra(EditorActivity.EXTRA_UPDATE_MODE, updateMode)
                         .putExtra(EditorActivity.EXTRA_OLD_START_MILLIS, oldStartMillis)
                         .putExtra(EditorActivity.EXTRA_OLD_TITLE, oldTitle)
+                        .putExtra(EditorActivity.EXTRA_TIME_UNSPECIFIED, timeUnspecified)
                 )
                 binding.input.setText("")
             }

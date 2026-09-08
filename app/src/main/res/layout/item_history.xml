@@ -20,6 +20,7 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="1"
+            android:textColor="@color/body_text"
             android:textSize="16sp"
             android:textStyle="bold" />
 

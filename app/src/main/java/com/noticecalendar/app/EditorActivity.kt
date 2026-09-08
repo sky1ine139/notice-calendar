@@ -32,6 +32,7 @@ class EditorActivity : AppCompatActivity() {
         const val EXTRA_UPDATE_MODE = "update_mode"
         const val EXTRA_OLD_START_MILLIS = "old_start_millis"
         const val EXTRA_OLD_TITLE = "old_title"
+        const val EXTRA_TIME_UNSPECIFIED = "time_unspecified"
         private const val REQ_CALENDAR = 101
         private const val HOUR_MS = TimeUtil.HOUR_MS
         private const val DAY_MS = TimeUtil.DAY_MS
@@ -102,6 +103,16 @@ class EditorActivity : AppCompatActivity() {
         binding.btnSave.setOnClickListener { onSaveClicked() }
 
         refreshDateTime()
+
+        // 通知原文里没有提到具体时间：明确提示，避免用户误把"今天全天"当成解析结果
+        if (intent.getBooleanExtra(EXTRA_TIME_UNSPECIFIED, false)) {
+            binding.tvDateTime.setTextColor(0xFFFF6F00.toInt())
+            Toast.makeText(
+                this,
+                "通知中未提到具体时间，已按今天全天预填，请点击时间修改后再写入",
+                Toast.LENGTH_LONG
+            ).show()
+        }
     }
 
     private fun onAllDayChanged(checked: Boolean) {

@@ -46,6 +46,8 @@
         android:hint="粘贴微信群 / QQ群的通知消息…"
         android:inputType="textMultiLine"
         android:padding="12dp"
+        android:textColor="@color/body_text"
+        android:textColorHint="@color/muted_text"
         android:textSize="15sp" />
 
     <LinearLayout
@@ -122,7 +124,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="觉得好用，请作者喝瓶水"
-                android:textColor="#333333"
+                android:textColor="@color/body_text"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
@@ -131,7 +133,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="完全免费，打赏纯属自愿"
-                android:textColor="#999999"
+                android:textColor="@color/faint_text"
                 android:textSize="12sp" />
         </LinearLayout>
 
@@ -139,7 +141,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="›"
-            android:textColor="#cccccc"
+            android:textColor="@color/muted_text"
             android:textSize="24sp" />
     </LinearLayout>
 
