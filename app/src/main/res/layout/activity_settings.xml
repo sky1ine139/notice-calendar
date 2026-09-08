@@ -175,11 +175,12 @@
             android:textSize="13sp" />
 
         <TextView
+            android:id="@+id/tv_version"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:text="通知日程助手 v1.2"
+            android:text="通知日程助手"
             android:textColor="@color/body_text"
             android:textSize="15sp"
             android:textStyle="bold" />

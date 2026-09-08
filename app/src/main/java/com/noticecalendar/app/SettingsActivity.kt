@@ -76,6 +76,9 @@ class SettingsActivity : AppCompatActivity() {
         binding.tvTheme.text = currentTheme.label
         binding.tvTheme.setOnClickListener { showThemePicker() }
 
+        // 版本号跟随 build.gradle 自动显示，避免手动改布局里的写死文案
+        binding.tvVersion.text = "通知日程助手 v${BuildConfig.VERSION_NAME}"
+
         // 检查更新
         binding.tvGithub.setOnClickListener {
             com.noticecalendar.app.update.UpdateChecker.check(this, silent = false)
