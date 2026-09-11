@@ -4,7 +4,7 @@
 
 无广告、无登录注册、无多余功能。
 
-**最新版本 v1.5** — [点击下载 APK](https://github.com/sky1ine139/notice-calendar/releases)
+**最新版本 v1.5** — [点击下载 APK](https://github.com/sky1ine139/notice-calendar/releases/latest)（约 25MB，正式签名，可直接覆盖升级）
 
 ### v1.5 更新
 
