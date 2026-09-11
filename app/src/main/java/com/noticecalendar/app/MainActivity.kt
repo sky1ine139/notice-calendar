@@ -2,9 +2,12 @@ package com.noticecalendar.app
 
 import android.content.ClipboardManager
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.noticecalendar.app.data.EventRecord
 import com.noticecalendar.app.data.EventRepository
@@ -12,6 +15,7 @@ import com.noticecalendar.app.data.SettingsStore
 import com.noticecalendar.app.databinding.ActivityMainBinding
 import com.noticecalendar.app.llm.LlmClient
 import com.noticecalendar.app.llm.ParsedEvent
+import com.noticecalendar.app.ocr.OcrHelper
 import com.noticecalendar.app.parse.LocalFallbackParser
 import com.noticecalendar.app.util.TimeUtil
 import java.time.LocalDate
@@ -24,6 +28,15 @@ import java.time.ZoneId
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+
+    /** 图片通知：系统相册选图（Android 13+ 走 Photo Picker，旧版本自动回退文档选择器，均无需存储权限） */
+    private val pickImage = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri == null) {
+            toast("没有读到所选图片")
+            return@registerForActivityResult
+        }
+        recognizeImage(uri)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,6 +51,7 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
         binding.btnPaste.setOnClickListener { pasteFromClipboard() }
+        binding.btnImage.setOnClickListener { pickImageFromGallery() }
         binding.btnParse.setOnClickListener { startParse() }
         binding.cardDonate.setOnClickListener {
             startActivity(Intent(this, DonateActivity::class.java))
@@ -61,6 +75,59 @@ class MainActivity : AppCompatActivity() {
             binding.input.setText(text)
             binding.input.setSelection(text.length)
         }
+    }
+
+    /** 打开系统相册选一张通知截图/照片（优先 Photo Picker，无需任何存储权限） */
+    private fun pickImageFromGallery() {
+        try {
+            pickImage.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        } catch (e: Exception) {
+            toast("没有找到可用的图片选择器")
+        }
+    }
+
+    /** 本地 OCR 识别图片文字 → 填入输入框 → 用户核对后点「解析事件」 */
+    private fun recognizeImage(uri: Uri) {
+        setLoading(true)
+        Thread {
+            var msg: String? = null
+            var ok = false
+            try {
+                val result = OcrHelper.recognizeBlocking(this, uri)
+                val text = result.text.trim()
+                runOnUiThread {
+                    if (text.isEmpty() || result.blocks == 0) {
+                        toast("没识别出文字，换张更清晰的截图试试")
+                    } else {
+                        val old = binding.input.text.toString().trim()
+                        binding.input.setText(if (old.isEmpty()) text else "$old\n$text")
+                        binding.input.setSelection(binding.input.text.length)
+                        toast("已识别 ${text.length} 个字，核对后点「解析事件」")
+                    }
+                }
+                ok = true
+            } catch (e: Exception) {
+                msg = e.message ?: e.toString()
+            } catch (e: OutOfMemoryError) {
+                msg = "图片太大，内存不足"
+            } finally {
+                runOnUiThread {
+                    setLoading(false)
+                    if (!ok) {
+                        val detail = msg ?: "未知错误"
+                        toast("图片识别失败：${detail.take(80)}")
+                        // 首次使用需要联网下载中文识别模型，失败时给出可操作提示
+                        if (detail.contains("download", true) || detail.contains("network", true) ||
+                            detail.contains("未初始化", true) || detail.contains("Wait", true)
+                        ) {
+                            toast("首次使用需联网下载识别模型，请连网后重试")
+                        }
+                    }
+                }
+            }
+        }.start()
     }
 
     private fun startParse() {
@@ -194,6 +261,7 @@ class MainActivity : AppCompatActivity() {
         binding.progress.visibility = if (loading) View.VISIBLE else View.GONE
         binding.btnParse.isEnabled = !loading
         binding.btnPaste.isEnabled = !loading
+        binding.btnImage.isEnabled = !loading
     }
 
     private fun toast(msg: String) {

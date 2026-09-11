@@ -18,8 +18,15 @@ android {
         applicationId "com.noticecalendar.app"
         minSdk 26          // Android 8.0 及以上可安装
         targetSdk 34
-        versionCode 5
-        versionName "1.4"
+        versionCode 6
+        versionName "1.5"
+
+        // 只打包手机实际使用的 CPU 架构：ML Kit 的 OCR native 库每个架构 10MB+，
+        // 保留 x86/x86_64 会让安装包凭空翻倍（模拟器才需要，用 Android Studio 跑模拟器时
+        // 可在下面临时加上 "x86_64" 再构建）
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a'
+        }
     }
 
     signingConfigs {
@@ -64,4 +71,10 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
     // 调用大模型 API 使用（OpenAI 兼容接口）
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    // 图片通知识别：ML Kit 中文文字识别（本地离线推理，图片不上传）
+    // 只保留中文库：其自带 Hani(汉字)+Latn(拉丁字符) 双模型与语言判别器，已能中英混排，
+    // 无需再引入 text-recognition（纯拉丁库，凭空多 3MB+）
+    implementation 'com.google.mlkit:text-recognition-chinese:16.0.1'
+    // 系统相册选图（Photo Picker，Android 13+ 原生 / 旧版本自动回退，均无需存储权限）
+    implementation 'androidx.activity:activity-ktx:1.9.0'
 }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">通知日程助手</string>
-    <string name="main_tip">流程：粘贴群通知 → AI解析 → 校对信息 → 写入系统日历。\n解析结果会自动存入「历史」，可随时回看、修改、重新写入日历。</string>
+    <string name="main_tip">流程：粘贴群通知（或识别通知截图）→ AI解析 → 校对信息 → 写入系统日历。\n解析结果会自动存入「历史」，可随时回看、修改、重新写入日历。\n图片识别在手机本地完成，截图不会上传到任何服务器，也可不填 API Key 使用。</string>
 </resources>

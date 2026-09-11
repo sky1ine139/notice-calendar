@@ -43,7 +43,7 @@
         android:layout_marginTop="8dp"
         android:background="@drawable/bg_input"
         android:gravity="top|start"
-        android:hint="粘贴微信群 / QQ群的通知消息…"
+        android:hint="粘贴微信群 / QQ群的通知文字，或点下方按钮识别通知截图…"
         android:inputType="textMultiLine"
         android:padding="12dp"
         android:textColor="@color/body_text"
@@ -72,6 +72,14 @@
             android:layout_weight="1"
             android:text="解析事件" />
     </LinearLayout>
+
+    <Button
+        android:id="@+id/btn_image"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="🖼️ 识别图片通知（截图/照片）" />
 
     <ProgressBar
         android:id="@+id/progress"
