@@ -19,7 +19,30 @@ object LocalFallbackParser {
     // "延期到/改期到"等后面跟新时间的模式
     private val UPDATE_TO = Regex("(?:延期到|改期到|调整为|推迟到|顺延至|改到|改为|改在)")
     // 常见事件名后缀：优先从通知中提取核心事件名（如"志愿者面试""互评大会"）
-    private val EVENT_SUFFIX = "面试|笔试|考试|测验|会议|例会|班会|讲座|培训|大会|答辩|活动|仪式|演练|彩排|值班|签到|比赛|竞赛|测试|座谈|汇报|研讨|团课|党课|宣讲|招新|纳新|换届|动员会|总结会|分享会|宣讲会|报告会|座谈会|招聘"
+    private val EVENT_SUFFIX = "面试|笔试|考试|测验|会议|例会|班会|讲座|培训|大会|答辩|活动|仪式|演练|彩排|值班|签到|比赛|竞赛|测试|座谈|汇报|研讨|团课|党课|宣讲|招新|纳新|换届|动员会|总结会|分享会|宣讲会|报告会|座谈会|招聘|科目"
+    // 考试/活动与事件关键字之间用于连接的动词（提取科目信息时先剔除）
+    private val LINK_WORDS = Regex("^(?:于|在|是|为|将于|定于|举办|举行|开考|开展|进行|的|安排)+")
+    // 科目信息：如"英语四级和六级""英语四六级""计算机二级"
+    // 注意末尾必须用 lookahead（不能用 ?），否则非贪婪会只匹配到"英语四级"就停
+    private val SUBJECT_PHRASE = Regex(
+        "(?:全国)?(?:大学)?(?:英语|计算机|日语|俄语|法语|德语|四级|六级|四六级|专四|专八|雅思|托福|考研|CET)" +
+            "[\\u4e00-\\u9fa5A-Za-z0-9]{0,4}?(?:四六级|四级|六级|AB级|A级|B级|[一二三四五六七八九十]级|考试|笔试)" +
+            "(?:[和与、及][\\u4e00-\\u9fa5A-Za-z0-9]{0,3}?(?:四六级|四级|六级|[一二三四五六七八九十]级))?" +
+            "(?=[，,。.！!？?；;\\s]|$)"
+    )
+    // 考试类型：笔试 / 口试 / 机考
+    private val EXAM_TYPE = Regex("笔试|口试|机考|上机考试|机试")
+    // 科目名开头的限定词（"全国计算机二级考试"→"计算机二级考试"，更贴近学生日常叫法）
+    private val SUBJECT_PREFIX = Regex("^(?:全国|大学|本校|我校)+")
+    // 事件名词头的噪音前缀：时间词/范围词/虚词（"2点实验室例会""全国计算机二级考试"）
+    // 匹配的是"从头开始连续的噪音字"，取其结束位置之后的文本
+    private val NOISE_PREFIX = Regex("^[点时分的在于全各本该这个了的和与及晚上下午早中国]+")
+    // 事件名里的通告类噪音词（"班会通知""实验室例会请各组成员参加"里的尾巴）
+    private val TITLE_NOISE = Regex("(?:通知|公告|提醒|须知|安排|请|，|,|。|\\.)+$")
+    // 事件名左侧的边界词：出现这些引导动词/介词，说明其左侧属于句子其他部分
+    private val EVENT_BOUNDARY_PHRASES = listOf(
+        "召开", "举行", "举办", "开展", "进行", "组织", "安排", "关于", "参加", "报名参加", "定于", "将于"
+    )
     // 带前缀的房间号/字母数字地点："面试地点在10110""候场地点在10113B""考试地点：A101"
     private val ROOM_RE = Regex("(面试地点|候场地点|考试地点|集合地点|活动地点|比赛地点|报到地点|演出地点|参赛地点|笔试地点|答辩地点|开会地点|会议地点|上课地点|培训地点|值班地点|地点)(?:为|是|在|：|:)?\\s*([A-Za-z0-9][A-Za-z0-9\\-]{1,19})")
     // 从"本次XX延期""该XX改期"中提取事件名
@@ -86,10 +109,10 @@ object LocalFallbackParser {
         }
 
         // 更新类型：标题用提取到的事件名，而不是原文第一行（变更通知第一行通常是原因）
-        // 非更新类型：优先提取核心事件名（"志愿者面试"），找不到再退回原文第一行
+        // 非更新类型：优先用"科目+考试类型"或核心事件名（"英语四级和六级笔试""志愿者面试"），最后才退回第一行
         val title = when {
             isUpdate && !eventName.isNullOrBlank() -> eventName
-            else -> extractEventTitle(raw) ?: firstTitle(raw)
+            else -> buildTitle(raw)
         }
         return ParsedEvent(
             title = title,
@@ -175,17 +198,99 @@ object LocalFallbackParser {
         return null
     }
 
-    /** 从通知中提取核心事件名（如"志愿者面试""党员大会"），找不到则返回null */
+    /**
+     * 从通知中提取核心事件名（如"发展对象互评大会""班会""英语四六级考试"）。
+     *
+     * 做法是确定性的：定位事件类型关键词（大会/面试/考试…），向前扫到最近的标点或引导动词，
+     * 取其中的修饰语组成事件名，最后剥掉词头噪音与"通知"类尾词。不使用复杂正则，便于测试与维护。
+     */
     private fun extractEventTitle(raw: String): String? {
         val text = raw.replace("\n", " ")
-        // 事件名通常跟在"举行/参加/召开"等引导词或标点/句子开头之后，
-        // 这样避免把"一食堂三楼举行党员大会"这类地点+动词结构误当成标题
-        val m = Regex("(?:^|[，。！？；、\\s]|举行|开展|进行|参加|召开|举办|开始|组织)([\\u4e00-\\u9fa5]{2,8}?(?:$EVENT_SUFFIX))").find(text)
-            ?: return null
-        var name = m.groupValues[1].trim()
-        // 去掉冗余引导词（"参加""举行"等），只保留事件名核心
-        name = name.replace(Regex("^(?:参加|举行|开展|进行|举办|召开|安排|组织|负责|记得|别忘了)"), "").trim()
-        return if (name.length >= 2) name.take(20) else null
+        if (text.isBlank()) return null
+        // 长关键词优先，避免"动员会"被"会"抢先命中
+        val keywords = EVENT_SUFFIX.split("|").sortedByDescending { it.length }
+        for (kw in keywords) {
+            var from = 0
+            while (true) {
+                val at = text.indexOf(kw, from)
+                if (at < 0) break
+                val candidate = buildEventCandidate(text, at, kw)
+                if (candidate != null) return candidate.take(20)
+                from = at + kw.length
+            }
+        }
+        return null
+    }
+
+    /** 取出关键词及其前面的修饰语，切成一个干净的事件名；不合法返回 null */
+    private fun buildEventCandidate(text: String, at: Int, kw: String): String? {
+        val end = at + kw.length
+        // 向前扫描放宽到 12 字：真正的边界由标点/引导动词决定，
+        // 窄上限会在"全国计算机二级考试"这类里把"全"截掉留下"国"
+        val maxPrefix = 12
+
+        // 往前最多取 maxPrefix 个汉字
+        var scan = at
+        while (scan > 0 && at - scan < maxPrefix && text[scan - 1] in '\u4e00'..'\u9fa5') scan--
+        val before = text.substring(0, at)
+
+        // 找最近的边界：标点/空格，或"召开/举行"这类引导动词
+        val boundaryChar = before.indexOfLast { it !in '\u4e00'..'\u9fa5' }
+        val boundaryPhrase = EVENT_BOUNDARY_PHRASES.maxOfOrNull { p ->
+            val i = before.lastIndexOf(p)
+            if (i < 0) -1 else i + p.length
+        } ?: -1
+        val start = maxOf(scan, boundaryChar + 1, boundaryPhrase)
+
+        var phrase = text.substring(start, end)
+        // 从"首个不是时间/范围/虚词的字"开始截取（"全国计算机二级考试"→"计算机二级考试"）
+        val noise = NOISE_PREFIX.find(phrase)
+        if (noise != null) phrase = phrase.substring(noise.range.last + 1)
+        phrase = trimEventName(phrase)
+        if (phrase.length !in 2..8) return null
+        if (phrase == kw && kw.length < 2) return null
+        return phrase
+    }
+
+    /** 剪掉事件名上的通告类尾巴（"班会通知"→"班会"）与动词/助词残渣 */
+    private fun trimEventName(n: String): String {
+        var name = n.replace(TITLE_NOISE, "").trim()
+        // 单个"通"（"班会通"）或"通知"残缺时直接去掉
+        if (name.length >= 3 && name.endsWith("通")) name = name.dropLast(1)
+        name = name.replace(Regex("(?:将于|定于|于|在|是|为|的|安排|时间|地点)+$"), "").trim()
+        return name
+    }
+
+    /** 提取通知里的科目/等级信息（"英语四级和六级""计算机二级"） */
+    private fun extractSubjectInfo(text: String): String? {
+        val m = SUBJECT_PHRASE.find(text) ?: return null
+        val cleaned = m.value
+            .replace(LINK_WORDS, "")
+            .replace(SUBJECT_PREFIX, "")
+            .replace(Regex("[\\s，,。.！!？?、～\\-]+"), "")
+            .trim()
+        return cleaned.takeIf { it.length in 2..16 }
+    }
+
+    /**
+     * 生成标题：先在整个通知里找"科目+考试类型"这种信息量最大的组合，
+     * 再找核心事件名，最后才退回第一行（并清理）。
+     *
+     * 之所以不再只取第一行：群通知第一行常常是"笔试（CET）于2026年12月12日举行"，
+     * 挖掉日期后只剩下无意义的残句。
+     */
+    private fun buildTitle(raw: String): String? {
+        val text = raw.replace("\n", " ")
+        val subject = extractSubjectInfo(text)
+        val examType = EXAM_TYPE.find(text)?.value
+        if (subject != null) {
+            // 科目名里已含"考试/笔试"等字样时不再重复拼接
+            val hasType = Regex("考试|笔试|口试|机考").containsMatchIn(subject)
+            val combined = if (hasType) subject else "$subject${examType ?: "考试"}"
+            return combined.take(20)
+        }
+        extractEventTitle(raw)?.let { return it }
+        return firstTitle(raw)
     }
 
     /** 从变更通知中提取被修改的事件名（如"本次互评大会延期"→"互评大会"） */
@@ -314,11 +419,14 @@ object LocalFallbackParser {
         s = s.replace(Regex("(?:凌晨|早上|上午|中午|下午|晚上|晚)?\\s*[一二三四五六七八九十两]+[点时]\\s*(?:半|一刻|三刻|[一二三四五六七八九十两]+分?)?"), " ")
         // 8. 去掉单独的时段词（残留的）
         s = s.replace(Regex("凌晨|早上|上午|中午|下午|晚上|傍晚|晚间|今晚|夜里|深夜|清晨|明早|明晚"), " ")
+        // 8. 去掉"具体场次安排如下"这类承接句（OCR 截断时它会变成粘在标题尾巴上的残渣）
+        s = s.replace(Regex("[，,。.！!？?]?\\s*(?:具体[\\u4e00-\\u9fa5]{0,10}|详情|时间|地点|场次|安排)?(?:安排)?如下.*$"), " ")
         // 9. 去掉连接词前缀（要去、去、到、前往、赴、在、于、有个、需要、记得等）
         s = s.replace(Regex("^[\\s，,。.！!？?、]+"), "")
         s = s.replace(Regex("^(?:要去|要到|想去|想到|去|到|前往|赴|在|于|有个|有一个|需要|记得|别忘了|要|将|需|得|准备|打算)"), "")
-        // 10. 清理多余空格和标点
-        s = s.replace(Regex("[\\s，,。.！!？?、～\\-]+"), " ").trim()
+        // 10. 中文标点只替换成空格，不能让两侧汉字粘连（"…六级，具体…"曾被粘成"级具"）
+        s = s.replace(Regex("[，,。.！!？?、～]+"), " ")
+        s = s.replace(Regex("[\\s\\-]+"), " ").trim()
         return s
     }
 
