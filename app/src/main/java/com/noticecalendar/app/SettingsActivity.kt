@@ -32,9 +32,15 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val cfg = SettingsStore.load(this)
-        binding.etBaseUrl.setText(cfg.baseUrl)
+        // 回显时做一次规范化：曾经填错的地址（官网/控制台、漏 /v1）在这里自动变成正确地址
+        val shownUrl = SettingsStore.normalizeBaseUrl(cfg.baseUrl)
+        val shownModel = SettingsStore.normalizeModel(cfg.model)
+        binding.etBaseUrl.setText(shownUrl)
         binding.etApiKey.setText(cfg.apiKey)
-        binding.etModel.setText(cfg.model)
+        binding.etModel.setText(shownModel)
+        if (shownUrl != cfg.baseUrl || shownModel != cfg.model) {
+            Toast.makeText(this, "已自动修正接口地址/模型名，请点「保存」", Toast.LENGTH_LONG).show()
+        }
 
         binding.btnSave.setOnClickListener {
             SettingsStore.save(
@@ -49,9 +55,9 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.btnTest.setOnClickListener {
             val testCfg = SettingsStore.Config(
-                baseUrl = binding.etBaseUrl.text.toString(),
+                baseUrl = SettingsStore.normalizeBaseUrl(binding.etBaseUrl.text.toString()),
                 apiKey = binding.etApiKey.text.toString(),
-                model = binding.etModel.text.toString()
+                model = SettingsStore.normalizeModel(binding.etModel.text.toString())
             )
             binding.tvTestResult.text = "测试中…"
             binding.btnTest.isEnabled = false

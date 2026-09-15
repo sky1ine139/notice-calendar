@@ -98,15 +98,41 @@ object LlmClient {
             .build()
         client.newCall(request).execute().use { resp ->
             val text = resp.body?.string().orEmpty()
-            if (!resp.isSuccessful) {
-                throw IOException("HTTP ${resp.code}: ${text.take(200)}")
+            if (!resp.isSuccessful) throw IOException(httpError(resp.code, text, cfg))
+            // 有些地址（如把网页控制台当接口填）会返回 200 + HTML 页面
+            if (text.trimStart().startsWith("<")) throw IOException(htmlResponseHint(cfg))
+            return try {
+                JSONObject(text)
+                    .getJSONArray("choices")
+                    .getJSONObject(0)
+                    .getJSONObject("message")
+                    .getString("content")
+            } catch (e: Exception) {
+                throw IOException("返回内容不是预期的 JSON（${text.take(80)}）")
             }
-            return JSONObject(text)
-                .getJSONArray("choices")
-                .getJSONObject(0)
-                .getJSONObject("message")
-                .getString("content")
         }
+    }
+
+    /** 常见 HTTP 错误翻译成人话，避免用户只看到状态码 */
+    private fun httpError(code: Int, body: String, cfg: SettingsStore.Config): String = when {
+        body.trimStart().startsWith("<") -> htmlResponseHint(cfg)
+        code == 401 -> "API Key 无效或已过期（HTTP 401），请到服务商控制台重新复制 Key"
+        code == 402 -> "账户余额不足（HTTP 402），请先充值"
+        code == 403 -> "无权限访问该模型（HTTP 403），确认账号已开通对应模型"
+        code == 404 -> "接口地址或模型名不对（HTTP 404）。地址示例：https://api.deepseek.com/v1"
+        code == 429 -> "请求过于频繁或额度用尽（HTTP 429），稍后再试"
+        code in 500..599 -> "服务商服务器错误（HTTP $code），稍后重试"
+        else -> "HTTP $code：${body.take(150)}"
+    }
+
+    /** 拿到的是 HTML 网页而不是接口 JSON —— 几乎都是把控制台地址当成了 API 地址 */
+    private fun htmlResponseHint(cfg: SettingsStore.Config): String {
+        val host = cfg.baseUrl.substringAfter("://").substringBefore('/')
+        return "接口地址返回的是网页而不是接口数据。\n" +
+            "你填的：$host\n" +
+            "这个地址是服务商官网/控制台，不是 API 接口。\n" +
+            "请改成 API 地址，例如 DeepSeek：https://api.deepseek.com/v1\n" +
+            "（模型名填 deepseek-chat）"
     }
 
     /** 容错解析模型输出：剥离 Markdown 代码块、截取首尾大括号之间的JSON */

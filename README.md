@@ -4,7 +4,16 @@
 
 无广告、无登录注册、无多余功能。
 
-**最新版本 v1.5.2** — [点击下载 APK](https://github.com/sky1ine139/notice-calendar/releases/latest)（约 25MB，正式签名，可直接覆盖升级）
+**最新版本 v1.5.3** — [点击下载 APK](https://github.com/sky1ine139/notice-calendar/releases/latest)（约 25MB，正式签名，可直接覆盖升级）
+
+### v1.5.3 修复
+
+- 🐛 **修复"填了 API 地址却报 HTML/429"的问题**：很多人会把服务商的**官网/控制台地址**当成接口地址填（如 `https://platform.deepseek.com/`），那个地址返回的是网页而不是接口数据，报错信息里会混进一整段 `<!DOCTYPE html>` 源码
+  - 现在**保存/测试连接时自动规范化地址**：控制台/官网地址自动换成真正的 API 域名，漏写 `/v1` 自动补上，多写 `/chat/completions` 自动去掉，只写域名自动补 `https://`
+  - 打开设置页时会**回显修正后的地址**并提示"已自动修正接口地址/模型名，请点「保存」"
+- 🐛 **模型名自动纠正**：只填服务商名（如 `deepseek`）时自动补成可用模型名（`deepseek-chat`）；`kimi`→`moonshot-v1-8k`、`qwen`→`qwen-plus`、`glm`→`glm-4-flash`
+- 🐛 **报错信息说人话**：不再把 HTML 源码糊在屏幕上，改为明确提示——你填的地址是官网/控制台、请改成 API 地址并给出示例；常见状态码也有了中文解释（401 Key 无效 / 402 余额不足 / 404 地址或模型名不对 / 429 请求过频）
+- 地址规范化与报错路径均已离线验证（21 个地址/模型用例 + 真实 OkHttp 打本地假服务器 4 项断言全部通过）
 
 ### v1.5.2 修复
 
@@ -216,6 +225,16 @@ NoticeCalendar/
 ---
 
 ## 八、更新日志
+
+### v1.5.3（2026-09-15）
+
+- **修复"测试连接失败、报 HTML/429"**：根因是把服务商官网/控制台当作接口地址（`https://platform.deepseek.com/` 返回的是网页，HTTP 200 + text/html）。新增 `SettingsStore.normalizeBaseUrl()`：
+  - `platform.deepseek.com` / `www.deepseek.com` / `deepseek.com` → `api.deepseek.com/v1`
+  - 漏 `/v1` 自动补；多写 `/chat/completions` 自动去；无协议自动补 `https://`；结尾 `/` 去掉
+  - 设置页回显修正后的值并提示保存
+- **模型名自动纠正**（`normalizeModel()`）：`deepseek`→`deepseek-chat`、`kimi`→`moonshot-v1-8k`、`qwen`→`qwen-plus`、`glm`→`glm-4-flash`
+- **错误信息可读化**：HTML 响应 → "接口地址返回的是网页而不是接口数据，请改成 API 地址（示例）"；401/402/403/404/429/5xx 均有中文说明；不再显示 HTML 源码片段
+- 验证：21 个地址/模型用例外加"真实 OkHttp 请求本地假服务器返回 HTML"的 4 项断言，全部通过
 
 ### v1.5.2（2026-09-12）
 
