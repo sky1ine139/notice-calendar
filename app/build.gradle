@@ -18,8 +18,8 @@ android {
         applicationId "com.noticecalendar.app"
         minSdk 26          // Android 8.0 及以上可安装
         targetSdk 34
-        versionCode 7
-        versionName "1.5.1"
+        versionCode 8
+        versionName "1.5.2"
 
         // 只打包手机实际使用的 CPU 架构：ML Kit 的 OCR native 库每个架构 10MB+，
         // 保留 x86/x86_64 会让安装包凭空翻倍（模拟器才需要，用 Android Studio 跑模拟器时

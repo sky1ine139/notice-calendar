@@ -19,7 +19,17 @@ object LocalFallbackParser {
     // "延期到/改期到"等后面跟新时间的模式
     private val UPDATE_TO = Regex("(?:延期到|改期到|调整为|推迟到|顺延至|改到|改为|改在)")
     // 常见事件名后缀：优先从通知中提取核心事件名（如"志愿者面试""互评大会"）
-    private val EVENT_SUFFIX = "面试|笔试|考试|测验|会议|例会|班会|讲座|培训|大会|答辩|活动|仪式|演练|彩排|值班|签到|比赛|竞赛|测试|座谈|汇报|研讨|团课|党课|宣讲|招新|纳新|换届|动员会|总结会|分享会|宣讲会|报告会|座谈会|招聘|科目"
+    // 注意必须含"志愿者/志愿/服务"这类校园高频词，否则整句通知会退化成"取第一行"
+    private val EVENT_SUFFIX = "志愿者|志愿服务|志愿|义工|公益|服务|面试|笔试|考试|测验|会议|例会|班会|讲座|培训|大会|答辩|活动|仪式|演练|彩排|值班|签到|比赛|竞赛|测试|座谈|汇报|研讨|团课|党课|宣讲|招新|纳新|换届|动员会|总结会|分享会|宣讲会|报告会|座谈会|招聘|科目"
+    // 志愿类通知与交通词：同时出现时标题合成"乘车做志愿"（如"跟车志愿者统一乘大巴去机场"）
+    private val VOLUNTEER_WORDS = Regex("志愿|义工|公益")
+    private val TRANSPORT_WORDS = Regex("乘车|坐车|大巴|包车|车辆|车队|接送|上车|发车")
+    // 事件关键词前面需要剥掉的修饰语/虚词（"的跟车志愿者""所有的举牌志愿者"）
+    private val MODIFIER_NOISE = Regex("^[的了和与及并将把在到去为是各所有全体广大]+")
+    // 可与其他事件词连用的后缀词表：用于"志愿者"+"面试/招募"这类合并
+    private val SUFFIX_KEYWORDS = listOf(
+        "面试", "招募", "招新", "纳新", "服务", "活动", "培训", "考试", "笔试", "值班", "签到", "表彰", "总结"
+    )
     // 考试/活动与事件关键字之间用于连接的动词（提取科目信息时先剔除）
     private val LINK_WORDS = Regex("^(?:于|在|是|为|将于|定于|举办|举行|开考|开展|进行|的|安排)+")
     // 科目信息：如"英语四级和六级""英语四六级""计算机二级"
@@ -207,6 +217,11 @@ object LocalFallbackParser {
     private fun extractEventTitle(raw: String): String? {
         val text = raw.replace("\n", " ")
         if (text.isBlank()) return null
+        // 志愿 + 交通同时出现：合成"乘车做志愿"这种总结性标题
+        // （"跟车志愿者统一乘坐7点的大巴到机场"→ 直接取"跟车志愿者"信息量太低）
+        if (VOLUNTEER_WORDS.containsMatchIn(text) && TRANSPORT_WORDS.containsMatchIn(text)) {
+            return "乘车做志愿"
+        }
         // 长关键词优先，避免"动员会"被"会"抢先命中
         val keywords = EVENT_SUFFIX.split("|").sortedByDescending { it.length }
         for (kw in keywords) {
@@ -224,7 +239,11 @@ object LocalFallbackParser {
 
     /** 取出关键词及其前面的修饰语，切成一个干净的事件名；不合法返回 null */
     private fun buildEventCandidate(text: String, at: Int, kw: String): String? {
-        val end = at + kw.length
+        // 关键词后紧跟另一个事件词时合并（"志愿者"+"面试"→"志愿者面试"、"志愿者"+"招募"→"志愿者招募"）
+        val merged = SUFFIX_KEYWORDS.firstOrNull { text.startsWith(it, at + kw.length) }
+        val effectiveKw = if (merged != null) kw + merged else kw
+        val end = at + effectiveKw.length
+
         // 向前扫描放宽到 12 字：真正的边界由标点/引导动词决定，
         // 窄上限会在"全国计算机二级考试"这类里把"全"截掉留下"国"
         val maxPrefix = 12
@@ -246,9 +265,11 @@ object LocalFallbackParser {
         // 从"首个不是时间/范围/虚词的字"开始截取（"全国计算机二级考试"→"计算机二级考试"）
         val noise = NOISE_PREFIX.find(phrase)
         if (noise != null) phrase = phrase.substring(noise.range.last + 1)
+        // 再剥掉修饰语/虚词（"的跟车志愿者""所有的举牌志愿者"）
+        phrase = phrase.replace(MODIFIER_NOISE, "")
         phrase = trimEventName(phrase)
         if (phrase.length !in 2..8) return null
-        if (phrase == kw && kw.length < 2) return null
+        if (phrase == effectiveKw && effectiveKw.length < 2) return null
         return phrase
     }
 
